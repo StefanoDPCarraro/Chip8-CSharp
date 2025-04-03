@@ -10,8 +10,6 @@ namespace Chip8_CSharp.Chip8
         ushort SP = 0;
         ushort I = 0;
         ushort PC = 0x200; // As described should start at 0x200 as the prior addr are reserved
-        byte delayTimer = 0;
-        byte soundTimer = 0;
         byte Vx = 0;
         byte Vy = 0;
 
@@ -139,9 +137,17 @@ namespace Chip8_CSharp.Chip8
                         case 0x8005:
                             // 8XY5
                             // Vx -= Vy
-                            // TODO: Check for overflow
+                            // TODO: Check for underflow
                             V[(byte)(opcode & 0x0F00) >> 16] -= Vy;
                             break;
+
+                        case 0x8006:
+                            // 8XY6
+                            // Vx >>= 1
+                            // TODO: Stores the least significant bit of VX prior to the shift into VF
+                            V[(byte)(opcode & 0x0F00) >> 16] >>= 1;
+                            break;
+
                     }
                     break;
             }
