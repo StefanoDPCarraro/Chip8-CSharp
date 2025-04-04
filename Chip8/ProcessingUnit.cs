@@ -130,31 +130,102 @@ namespace Chip8_CSharp.Chip8
                         case 0x8004:
                             // 8XY4
                             // Vx += Vy
-                            // TODO: Check for overflow
+                            // Check for overflow
+                            if(checkOverflow(V[(byte)(opcode & 0x0F00) >> 16], Vy)){
+                                V[15] = 1;
+                            } else{
+                                V[15] = 0;
+                            }
                             V[(byte)(opcode & 0x0F00) >> 16] += Vy;
                             break;
 
                         case 0x8005:
                             // 8XY5
                             // Vx -= Vy
-                            // TODO: Check for underflow
+                            // Check for underflow
+                            if(checkUnderflow(V[(byte)(opcode & 0x0F00) >> 16], Vy)){
+                                V[15] = 1;
+                            } else{
+                                V[15] = 0;
+                            }
                             V[(byte)(opcode & 0x0F00) >> 16] -= Vy;
                             break;
 
                         case 0x8006:
                             // 8XY6
                             // Vx >>= 1
-                            // TODO: Stores the least significant bit of VX prior to the shift into VF
+                            // Stores the least significant bit of VX prior to the shift into VF
+                            V[15] = (byte)(V[(byte)(opcode & 0x0F00) >> 16] & 0x0001);
                             V[(byte)(opcode & 0x0F00) >> 16] >>= 1;
                             break;
-
+                        
+                        case 0x8007:
+                            // 8XY7
+                            // Vx = Vy - Vx
+                            // Check for underflow
+                            if(checkUnderflow(Vy, V[(byte)(opcode & 0x0F00) >> 16])){
+                                V[15] = 1;
+                            } else{
+                                V[15] = 0;
+                            }
+                            V[(byte)(opcode & 0x0F00)] = (byte)(Vy - V[(byte)(opcode & 0x0F00)]);
+                            break;
+                        
+                        case 0x800E:
+                            // 8XYE
+                            // Vx <<= 1
+                            // Stores the most significant bit of VX prior to the shift into VF
+                            V[15] = (byte)(V[(byte)(opcode & 0x0F00) >> 16] & 0x8000);
+                            V[(byte)(opcode & 0x0F00) >> 16] <<= 1;
+                            break;
                     }
                     break;
+                
+                case 0x9000:
+                    // 9XY0
+                    // Vx != Vy : Skip next instruction ? Pass
+                    Vx = V[(byte)(opcode & 0x0F00) >> 16];
+                    Vy = V[(byte)(opcode & 0x00F0) >> 8];
+                    if(Vx != Vy){
+                        PC += 2;
+                    }
+                    break;
+
+                case 0xA000:
+                    // ANNN
+                    // Sets I to NNN
+                    I = V[(byte)(opcode & 0x0FFF)];
+                    break;
+
+                case 0xB000:
+                    // BNNN
+                    // Sets I to NNN + V0
+                    I = V[0];
+                    I += V[(byte)(opcode & 0x0FFF)];
+                    break;
+
+                case 0xC000:
+                    // CXNN
+                    break;
+
+                
             }
         }
 
         void clearScreen(){
             return;
+        }
+
+        bool checkOverflow(byte a, byte b){
+            short sum = (short)(a + b);
+            if(sum > 255){
+                return true;
+            }
+            return false;
+        }
+
+        bool checkUnderflow(byte a, byte b){
+            return a < b;
         }
     }
 }
