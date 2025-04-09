@@ -280,7 +280,8 @@ namespace Chip8_CSharp.Chip8
                             break;
 
                         case 0xF00A:
-                            Vx = 
+                            Vx = getKey();
+                            break;
 
                         case 0xF015:
                             // FX15
@@ -378,7 +379,7 @@ namespace Chip8_CSharp.Chip8
             }
         }
 
-        int getKey(){
+        byte getKey(){
             // TODO: Map Keys
             return 0;
         }
