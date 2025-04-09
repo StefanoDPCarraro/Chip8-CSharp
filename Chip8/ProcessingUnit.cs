@@ -67,6 +67,7 @@ namespace Chip8_CSharp.Chip8
                     // 1NNN
                     // Jumps to NNN
                     PC = (ushort)(opcode & 0x0FFF);
+                    ignorePCAdvance();
                     break;
 
                 case 0x2000:
@@ -75,6 +76,7 @@ namespace Chip8_CSharp.Chip8
                     stack[SP] = PC;
                     SP++;
                     PC = (ushort)(opcode & 0x0FFF);
+                    ignorePCAdvance();
                     break;
 
                 case 0x3000:
@@ -272,6 +274,14 @@ namespace Chip8_CSharp.Chip8
                     Vx = V[opcode & 0x0F00 >> 16];
                     switch (opcode & 0xF0FF)
                     {
+                        case 0xF007:
+                            // FX07
+                            Vx = delayTimer;
+                            break;
+
+                        case 0xF00A:
+                            Vx = 
+
                         case 0xF015:
                             // FX15
                             delayTimer = Vx;
@@ -360,6 +370,17 @@ namespace Chip8_CSharp.Chip8
                 V[j] = mem[aux];
                 aux++;
             }
+        }
+
+        void ignorePCAdvance(){
+            if(PC > 1){
+                PC -= 2;
+            }
+        }
+
+        int getKey(){
+            // TODO: Map Keys
+            return 0;
         }
     }
 }
