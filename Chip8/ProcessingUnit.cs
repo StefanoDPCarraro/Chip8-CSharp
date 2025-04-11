@@ -266,11 +266,17 @@ namespace Chip8_CSharp.Chip8
                         case 0xE09E:
                             // EX9E
                             // TODO: Skips next instruction if (key == Vx)
+                            if(getKey() == V[(byte)(opcode & 0x0F00) >> 16]){
+                                PC += 2;
+                            }
                             break;
 
                         case 0xE0A1:
                             // EXA1
                             // TODO: Skips next instruction if (key == Vx)
+                            if(getKey() != V[(byte)(opcode & 0x0F00) >> 16]){
+                                PC += 2;
+                            }
                             break;
                     }
                     break;
@@ -385,8 +391,7 @@ namespace Chip8_CSharp.Chip8
         }
 
         byte getKey(){
-            // TODO: Map Keys
-            return 0;
+            return Keyboard;
         }
     }
 }
