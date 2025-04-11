@@ -4,6 +4,11 @@ namespace Chip8_CSharp.Chip8
 {
     class ProcessingUnit
     {
+        byte keyboard = 0x10;
+        public byte Keyboard{
+            get => keyboard;
+            set => keyboard = value;
+        }
         byte[] mem = new byte[4096]; // 4k bytes memory
         byte[] V = new byte[16]; // Registers (addr F reserved for carry flag)
         ushort[] stack = new ushort[48];
