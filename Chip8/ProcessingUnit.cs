@@ -3,14 +3,13 @@ using SDL2;
 
 namespace Chip8_CSharp.Chip8
 {
-    class ProcessingUnit
+    public class ProcessingUnit
     {
         byte keyboard = 0x10;
-        public byte Keyboard{
-            get => keyboard;
-            set => keyboard = value;
-        }
+        
+        byte[] gfx = new byte[64 * 32];
         bool newDraw = false;
+        
         byte[] mem = new byte[4096]; // 4k bytes memory
         byte[] V = new byte[16]; // Registers (addr F reserved for carry flag)
         ushort[] stack = new ushort[48];
@@ -43,14 +42,24 @@ namespace Chip8_CSharp.Chip8
 
         Random rand = new Random();
 
-        void runCpu()
+        public byte Keyboard{
+            get => keyboard;
+            set => keyboard = value;
+        }
+
+        public bool NewDraw{
+            get => newDraw;
+            set => newDraw = value;
+        }
+
+        public byte[] getGfx() => gfx;
+
+        public void runCpu()
         {
-            while (true)
-            {
-                ushort opcode = (ushort)(mem[PC] << 8 | mem[PC + 1]); // Read opcode (stored in 2 bytes)
-                OpcodeCases(opcode);
-                PC += 2;
-            }
+            ushort opcode = (ushort)(mem[PC] << 8 | mem[PC + 1]); // Read opcode (stored in 2 bytes)
+            OpcodeCases(opcode);
+            PC += 2;
+
         }
 
         void OpcodeCases(ushort opcode)
@@ -360,9 +369,25 @@ namespace Chip8_CSharp.Chip8
             return a < b;
         }
 
-        void Draw(byte Vx, byte Vy, byte height)
+        public void Draw(byte Vx, byte Vy, byte height)
         {
-            // TODO
+            byte pixel;
+            V[15] = 0;
+            for(int yLine = 0; yLine < height; yLine++)
+            {
+                pixel = mem[I + yLine];
+                for(int xLine = 0; xLine < 8; xLine++)
+                {
+                    if((pixel & (0x80 >> xLine)) != 0)
+                    {
+                        if(gfx[Vx + xLine + ((Vy + yLine) * 64)] == 1){
+                            V[15] = 1;
+                        }
+                        gfx[Vx + xLine + ((Vy + yLine ) * 64)] ^= 1;
+                    }
+                }
+                newDraw = true;
+            }
 
             return;
         }
