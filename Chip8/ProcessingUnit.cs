@@ -1,4 +1,5 @@
 using System;
+using SDL2;
 
 namespace Chip8_CSharp.Chip8
 {
@@ -9,6 +10,7 @@ namespace Chip8_CSharp.Chip8
             get => keyboard;
             set => keyboard = value;
         }
+        bool newDraw = false;
         byte[] mem = new byte[4096]; // 4k bytes memory
         byte[] V = new byte[16]; // Registers (addr F reserved for carry flag)
         ushort[] stack = new ushort[48];
@@ -46,19 +48,19 @@ namespace Chip8_CSharp.Chip8
             while (true)
             {
                 ushort opcode = (ushort)(mem[PC] << 8 | mem[PC + 1]); // Read opcode (stored in 2 bytes)
-                opcodeCases(opcode);
+                OpcodeCases(opcode);
                 PC += 2;
             }
         }
 
-        void opcodeCases(ushort opcode)
+        void OpcodeCases(ushort opcode)
         {
             switch (opcode & 0xF000) //Ignores the 3 least significant bytes
             {
                 case 0x0000:
                     if (opcode == 0x00E0)
                     {
-                        clearScreen();
+                        ClearScreen();
                     }
                     else if (opcode == 0x00EE)
                     {
@@ -72,7 +74,7 @@ namespace Chip8_CSharp.Chip8
                     // 1NNN
                     // Jumps to NNN
                     PC = (ushort)(opcode & 0x0FFF);
-                    ignorePCAdvance();
+                    IgnorePCAdvance();
                     break;
 
                 case 0x2000:
@@ -81,13 +83,13 @@ namespace Chip8_CSharp.Chip8
                     stack[SP] = PC;
                     SP++;
                     PC = (ushort)(opcode & 0x0FFF);
-                    ignorePCAdvance();
+                    IgnorePCAdvance();
                     break;
 
                 case 0x3000:
                     // 3XNN
                     // Skips next instruction if V[x] == NN
-                    Vx = V[(byte)(opcode & 0x0F00 >> 16)];
+                    Vx = V[(byte)(opcode & 0x0F00 >> 8)];
                     if ((byte)(opcode & 0x00FF) == Vx)
                     {
                         PC += 2;
@@ -97,7 +99,7 @@ namespace Chip8_CSharp.Chip8
                 case 0x4000:
                     // 4XNN
                     // Skips next instruction if V[x] != NN
-                    Vx = V[(byte)(opcode & 0x0F00 >> 16)];
+                    Vx = V[(byte)(opcode & 0x0F00 >> 8)];
                     if ((byte)(opcode & 0x00FF) != Vx)
                     {
                         PC += 2;
@@ -107,8 +109,8 @@ namespace Chip8_CSharp.Chip8
                 case 0x5000:
                     // 5XY0
                     // Skips next instruction if V[x] == V[y]
-                    Vx = V[(byte)(opcode & 0x0F00) >> 16];
-                    Vy = V[(byte)(opcode & 0x00F0) >> 8];
+                    Vx = V[(byte)(opcode & 0x0F00) >> 8];
+                    Vy = V[(byte)(opcode & 0x00F0) >> 4];
                     if (Vx == Vy)
                     {
 
@@ -118,50 +120,50 @@ namespace Chip8_CSharp.Chip8
                 case 0x6000:
                     // 6XNN
                     // Vx = NN
-                    V[(byte)(opcode & 0x0F00) >> 16] = (byte)(opcode & 0x00FF);
+                    V[(byte)(opcode & 0x0F00) >> 8] = (byte)(opcode & 0x00FF);
                     break;
 
                 case 0x7000:
                     // 7XNN
                     // Vx += NN
-                    V[(byte)(opcode & 0x0F00) >> 16] += (byte)(opcode & 0x00FF);
+                    V[(byte)(opcode & 0x0F00) >> 8] += (byte)(opcode & 0x00FF);
                     break;
 
                 case 0x8000:
                     // Generalization
-                    Vy = V[(byte)(opcode & 0x00F0) >> 8];
+                    Vy = V[(byte)(opcode & 0x00F0) >> 4];
 
                     switch (opcode & 0xF00F)
                     {
                         case 0x8000:
                             // 8XY0
                             // Vx = Vy
-                            V[(byte)(opcode & 0x0F00) >> 16] = Vy;
+                            V[(byte)(opcode & 0x0F00) >> 8] = Vy;
                             break;
 
                         case 0x8001:
                             // 8XY1
                             // Vx |= Vy
-                            V[(byte)(opcode & 0x0F00) >> 16] |= Vy;
+                            V[(byte)(opcode & 0x0F00) >> 8] |= Vy;
                             break;
 
                         case 0x8002:
                             // 8XY2
                             // Vx &= Vy
-                            V[(byte)(opcode & 0x0F00) >> 16] &= Vy;
+                            V[(byte)(opcode & 0x0F00) >> 8] &= Vy;
                             break;
 
                         case 0x8003:
                             // 8XY3
                             // Vx ^= Vy
-                            V[(byte)(opcode & 0x0F00) >> 16] ^= Vy;
+                            V[(byte)(opcode & 0x0F00) >> 8] ^= Vy;
                             break;
 
                         case 0x8004:
                             // 8XY4
                             // Vx += Vy
                             // Check for overflow
-                            if (checkOverflow(V[(byte)(opcode & 0x0F00) >> 16], Vy))
+                            if (CheckOverflow(V[(byte)(opcode & 0x0F00) >> 8], Vy))
                             {
                                 V[15] = 1;
                             }
@@ -169,14 +171,14 @@ namespace Chip8_CSharp.Chip8
                             {
                                 V[15] = 0;
                             }
-                            V[(byte)(opcode & 0x0F00) >> 16] += Vy;
+                            V[(byte)(opcode & 0x0F00) >> 8] += Vy;
                             break;
 
                         case 0x8005:
                             // 8XY5
                             // Vx -= Vy
                             // Check for underflow
-                            if (checkUnderflow(V[(byte)(opcode & 0x0F00) >> 16], Vy))
+                            if (CheckUnderflow(V[(byte)(opcode & 0x0F00) >> 8], Vy))
                             {
                                 V[15] = 1;
                             }
@@ -184,22 +186,22 @@ namespace Chip8_CSharp.Chip8
                             {
                                 V[15] = 0;
                             }
-                            V[(byte)(opcode & 0x0F00) >> 16] -= Vy;
+                            V[(byte)(opcode & 0x0F00) >> 8] -= Vy;
                             break;
 
                         case 0x8006:
                             // 8XY6
                             // Vx >>= 1
                             // Stores the least significant bit of VX prior to the shift into VF
-                            V[15] = (byte)(V[(byte)(opcode & 0x0F00) >> 16] & 0x0001);
-                            V[(byte)(opcode & 0x0F00) >> 16] >>= 1;
+                            V[15] = (byte)(V[(byte)(opcode & 0x0F00) >> 8] & 0x0001);
+                            V[(byte)(opcode & 0x0F00) >> 8] >>= 1;
                             break;
 
                         case 0x8007:
                             // 8XY7
                             // Vx = Vy - Vx
                             // Check for underflow
-                            if (checkUnderflow(Vy, V[(byte)(opcode & 0x0F00) >> 16]))
+                            if (CheckUnderflow(Vy, V[(byte)(opcode & 0x0F00) >> 8]))
                             {
                                 V[15] = 1;
                             }
@@ -214,8 +216,8 @@ namespace Chip8_CSharp.Chip8
                             // 8XYE
                             // Vx <<= 1
                             // Stores the most significant bit of VX prior to the shift into VF
-                            V[15] = (byte)(V[(byte)(opcode & 0x0F00) >> 16] & 0x8000);
-                            V[(byte)(opcode & 0x0F00) >> 16] <<= 1;
+                            V[15] = (byte)(V[(byte)(opcode & 0x0F00) >> 8] & 0x8000);
+                            V[(byte)(opcode & 0x0F00) >> 8] <<= 1;
                             break;
                     }
                     break;
@@ -223,8 +225,8 @@ namespace Chip8_CSharp.Chip8
                 case 0x9000:
                     // 9XY0
                     // Vx != Vy : Skip next instruction ? Pass
-                    Vx = V[(byte)(opcode & 0x0F00) >> 16];
-                    Vy = V[(byte)(opcode & 0x00F0) >> 8];
+                    Vx = V[(byte)(opcode & 0x0F00) >> 8];
+                    Vy = V[(byte)(opcode & 0x00F0) >> 4];
                     if (Vx != Vy)
                     {
                         PC += 2;
@@ -247,17 +249,17 @@ namespace Chip8_CSharp.Chip8
                 case 0xC000:
                     // CXNN
                     // Vx = RandByte & NN
-                    Vx = V[(byte)(opcode & 0x0F00) >> 16];
+                    Vx = V[(byte)(opcode & 0x0F00) >> 8];
                     Vx = (byte)((byte)rand.Next(0, 255) & (byte)(opcode & 0x00FF));
                     break;
 
                 case 0xD000:
                     // DXYN
                     // Draw cords(Vx, Vy), at size 8 x N
-                    Vx = V[(byte)(opcode & 0x0F00) >> 16];
-                    Vy = V[(byte)(opcode & 0x00F0) >> 8];
+                    Vx = V[(byte)(opcode & 0x0F00) >> 8];
+                    Vy = V[(byte)(opcode & 0x00F0) >> 4];
                     byte height = V[(byte)(opcode & 0x000F)];
-                    draw(Vx, Vy, height);
+                    Draw(Vx, Vy, height);
                     break;
 
                 case 0xE000:
@@ -265,16 +267,16 @@ namespace Chip8_CSharp.Chip8
                     {
                         case 0xE09E:
                             // EX9E
-                            // TODO: Skips next instruction if (key == Vx)
-                            if(getKey() == V[(byte)(opcode & 0x0F00) >> 16]){
+                            // Skips next instruction if (key == Vx)
+                            if(GetKey() == V[(byte)(opcode & 0x0F00) >> 8]){
                                 PC += 2;
                             }
                             break;
 
                         case 0xE0A1:
                             // EXA1
-                            // TODO: Skips next instruction if (key == Vx)
-                            if(getKey() != V[(byte)(opcode & 0x0F00) >> 16]){
+                            // Skips next instruction if (key == Vx)
+                            if(GetKey() != V[(byte)(opcode & 0x0F00) >> 8]){
                                 PC += 2;
                             }
                             break;
@@ -282,7 +284,7 @@ namespace Chip8_CSharp.Chip8
                     break;
 
                 case 0xF000:
-                    Vx = V[opcode & 0x0F00 >> 16];
+                    Vx = V[opcode & 0x0F00 >> 8];
                     switch (opcode & 0xF0FF)
                     {
                         case 0xF007:
@@ -291,7 +293,7 @@ namespace Chip8_CSharp.Chip8
                             break;
 
                         case 0xF00A:
-                            Vx = getKey();
+                            Vx = GetKey();
                             break;
 
                         case 0xF015:
@@ -322,14 +324,14 @@ namespace Chip8_CSharp.Chip8
 
                         case 0xF055:
                             // FX55
-                            x = (byte)(opcode & 0x0F00 >> 16);
-                            regDump(x);
+                            x = (byte)(opcode & 0x0F00 >> 8);
+                            RegDump(x);
                             break;
 
                         case 0xF065:
                             // FX65
-                            x = (byte)(opcode & 0x0F00 >> 16);
-                            regLoad(x);
+                            x = (byte)(opcode & 0x0F00 >> 8);
+                            RegLoad(x);
                             break;
                     }
                     break;
@@ -337,13 +339,13 @@ namespace Chip8_CSharp.Chip8
             }
         }
 
-        void clearScreen()
+        void ClearScreen()
         {
             // TODO
             return;
         }
 
-        bool checkOverflow(byte a, byte b)
+        bool CheckOverflow(byte a, byte b)
         {
             short sum = (short)(a + b);
             if (sum > 255)
@@ -353,18 +355,19 @@ namespace Chip8_CSharp.Chip8
             return false;
         }
 
-        bool checkUnderflow(byte a, byte b)
+        bool CheckUnderflow(byte a, byte b)
         {
             return a < b;
         }
 
-        void draw(byte Vx, byte Vy, byte height)
+        void Draw(byte Vx, byte Vy, byte height)
         {
             // TODO
+
             return;
         }
 
-        void regDump(byte x)
+        void RegDump(byte x)
         {
             ushort aux = I;
             for (byte j = 0; x > j; j++)
@@ -374,7 +377,7 @@ namespace Chip8_CSharp.Chip8
             }
         }
 
-        void regLoad(byte x)
+        void RegLoad(byte x)
         {
             ushort aux = I;
             for (byte j = 0; x > j; j++)
@@ -384,13 +387,13 @@ namespace Chip8_CSharp.Chip8
             }
         }
 
-        void ignorePCAdvance(){
+        void IgnorePCAdvance(){
             if(PC > 1){
                 PC -= 2;
             }
         }
 
-        byte getKey(){
+        byte GetKey(){
             return Keyboard;
         }
     }
