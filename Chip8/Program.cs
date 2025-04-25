@@ -2,12 +2,17 @@
 using SDL2;
 
 public class Program{
+    static ProcessingUnit cpu = new ProcessingUnit();
     static void Main(){
+        String path = "Pong.ch8";
+        runProgram(path);
+        run();
+    }
+
+    static void run(){
         bool open = false;
         
         byte scale = 10;
-
-        ProcessingUnit cpu = new ProcessingUnit();
 
         SDL.SDL_Init(SDL.SDL_INIT_EVERYTHING);
         IntPtr window = SDL.SDL_CreateWindow("CHIP8", 100, 100, 64 * scale, 32 * scale, SDL.SDL_WindowFlags.SDL_WINDOW_RESIZABLE);
@@ -24,19 +29,21 @@ public class Program{
                 rect.h = 64 * scale;
                 rect.w = 64 * scale;
 
-                for(int i = 0; i < 64; i++)
+                for(int i = 0; i < 64 ; i++)
                 {
-                    for(int j = 0; j < 32; j++)
+                    for(int j = 0; j < 32 ; j++)
                     {
                         rect.x = i*scale;
                         rect.y = j*scale;
                         rect.w = scale;
                         rect.h = scale;
-                        if (gfx[i + j * 64] == 1) {
+                        if (gfx[i + j * 64] == 1) 
+                        {
                             SDL.SDL_SetRenderDrawColor(render, 255, 255, 255, 255); // white
                             SDL.SDL_RenderFillRect(render, ref rect);
                         }
-                        if (gfx[i + j * 64] == 0) {
+                        if (gfx[i + j * 64] == 0) 
+                        {
                             SDL.SDL_SetRenderDrawColor(render, 0, 0, 0, 255); // black
                             SDL.SDL_RenderFillRect(render, ref rect);
                         }
@@ -44,7 +51,6 @@ public class Program{
                 }
                 SDL.SDL_RenderPresent(render);
                 cpu.NewDraw = false;
-                cpu.runCpu();
             }
             SDL.SDL_PollEvent(out evento);
             if(evento.type == SDL.SDL_EventType.SDL_QUIT){
@@ -133,6 +139,23 @@ public class Program{
                         break;
                 }
             }
+            cpu.runCpu();
+        }
+    }
+
+    private static void runProgram(String path){
+        FileStream fileStream = new FileStream(path, FileMode.Open);
+        BinaryReader binaryReader = new BinaryReader(fileStream);
+        try
+        {
+            int index = 0;
+            while (fileStream.CanRead)
+            {
+                cpu.mem[0x200 + index] = binaryReader.ReadByte();
+                ++index;
+            }
+        }
+        catch(EndOfStreamException){
         }
     }
 }

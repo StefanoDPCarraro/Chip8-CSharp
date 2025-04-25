@@ -10,7 +10,7 @@ namespace Chip8_CSharp.Chip8
         byte[] gfx = new byte[64 * 32];
         bool newDraw = false;
         
-        byte[] mem = new byte[4096]; // 4k bytes memory
+        public byte[] mem = new byte[4096]; // 4k bytes memory
         byte[] V = new byte[16]; // Registers (addr F reserved for carry flag)
         ushort[] stack = new ushort[48];
         ushort SP = 0;
@@ -56,6 +56,7 @@ namespace Chip8_CSharp.Chip8
 
         public void runCpu()
         {
+            Console.WriteLine("Foi");
             ushort opcode = (ushort)(mem[PC] << 8 | mem[PC + 1]); // Read opcode (stored in 2 bytes)
             OpcodeCases(opcode);
             PC += 2;
@@ -245,7 +246,7 @@ namespace Chip8_CSharp.Chip8
                 case 0xA000:
                     // ANNN
                     // Sets I to NNN
-                    I = V[(byte)(opcode & 0x0FFF)];
+                    I = (ushort)(opcode & 0x0FFF);
                     break;
 
                 case 0xB000:
@@ -329,6 +330,7 @@ namespace Chip8_CSharp.Chip8
                         case 0xF033:
                             // FX33
                             // Stores the binary coded decimal representation of Vx ???
+                            setBinaryCodedDecimal(Vx);
                             break;
 
                         case 0xF055:
@@ -350,7 +352,9 @@ namespace Chip8_CSharp.Chip8
 
         void ClearScreen()
         {
-            // TODO
+            for(int i = 0; i < gfx.Length; i++){
+                gfx[i] = 0;
+            }
             return;
         }
 
@@ -420,6 +424,12 @@ namespace Chip8_CSharp.Chip8
 
         byte GetKey(){
             return Keyboard;
+        }
+
+        void setBinaryCodedDecimal(byte Vx){
+            mem[I] = (byte)(Vx/100);
+            mem[I+1] = (byte)((Vx-mem[I])/10);
+            mem[I+2] = (byte)((Vx-mem[I]*100-mem[I+1]*10));
         }
     }
 }
