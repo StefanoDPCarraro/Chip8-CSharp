@@ -20,8 +20,10 @@ public class Program{
         SDL.SDL_Event evento;
         open = true;
 
-        while(open){
-            if(cpu.NewDraw){
+        while (open)
+        {
+            if (cpu.NewDraw)
+            {
                 var gfx = cpu.getGfx();
                 SDL.SDL_Rect rect;
                 rect.x = 0;
@@ -29,20 +31,20 @@ public class Program{
                 rect.h = 64 * scale;
                 rect.w = 64 * scale;
 
-                for(int i = 0; i < 64 ; i++)
+                for (int i = 0; i < 64; i++)
                 {
-                    for(int j = 0; j < 32 ; j++)
+                    for (int j = 0; j < 32; j++)
                     {
-                        rect.x = i*scale;
-                        rect.y = j*scale;
+                        rect.x = i * scale;
+                        rect.y = j * scale;
                         rect.w = scale;
                         rect.h = scale;
-                        if (gfx[i + j * 64] == 1) 
+                        if (gfx[i + j * 64] == 1)
                         {
                             SDL.SDL_SetRenderDrawColor(render, 255, 255, 255, 255); // white
                             SDL.SDL_RenderFillRect(render, ref rect);
                         }
-                        if (gfx[i + j * 64] == 0) 
+                        if (gfx[i + j * 64] == 0)
                         {
                             SDL.SDL_SetRenderDrawColor(render, 0, 0, 0, 255); // black
                             SDL.SDL_RenderFillRect(render, ref rect);
@@ -53,16 +55,19 @@ public class Program{
                 cpu.NewDraw = false;
             }
             SDL.SDL_PollEvent(out evento);
-            if(evento.type == SDL.SDL_EventType.SDL_QUIT){
+            if (evento.type == SDL.SDL_EventType.SDL_QUIT)
+            {
                 open = false;
             }
-            if(evento.type == SDL.SDL_EventType.SDL_KEYDOWN){
-                switch (evento.key.keysym.sym){
+            if (evento.type == SDL.SDL_EventType.SDL_KEYDOWN)
+            {
+                switch (evento.key.keysym.sym)
+                {
                     case SDL.SDL_Keycode.SDLK_1:
                         cpu.Keyboard = 0x01;
                         Console.WriteLine(cpu.Keyboard);
                         break;
-                    
+
                     case SDL.SDL_Keycode.SDLK_2:
                         cpu.Keyboard = 0x02;
                         Console.WriteLine(cpu.Keyboard);
@@ -140,6 +145,7 @@ public class Program{
                 }
             }
             cpu.runCpu();
+            Thread.Sleep(1000);
         }
     }
 

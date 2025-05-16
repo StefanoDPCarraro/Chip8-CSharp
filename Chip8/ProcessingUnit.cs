@@ -21,6 +21,7 @@ namespace Chip8_CSharp.Chip8
         byte Vx = 0;
         byte Vy = 0;
         byte x = 0;
+        bool debug = true;
         byte[] fontSet = {
             0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
             0x20, 0x60, 0x20, 0x20, 0x70, // 1
@@ -58,6 +59,7 @@ namespace Chip8_CSharp.Chip8
         {
             Console.WriteLine("Foi");
             ushort opcode = (ushort)(mem[PC] << 8 | mem[PC + 1]); // Read opcode (stored in 2 bytes)
+            Console.WriteLine("Opcode = " + opcode);
             OpcodeCases(opcode);
             PC += 2;
 
@@ -65,24 +67,37 @@ namespace Chip8_CSharp.Chip8
 
         void OpcodeCases(ushort opcode)
         {
+            Console.WriteLine("pc = " + PC);
             switch (opcode & 0xF000) //Ignores the 3 least significant bytes
             {
                 case 0x0000:
                     if (opcode == 0x00E0)
                     {
+                        if (debug)
+                        {
+                            Console.WriteLine("Clear Screen");
+                        }
                         ClearScreen();
                     }
                     else if (opcode == 0x00EE)
                     {
+                        if (debug)
+                        {
+                            Console.WriteLine("Return Subroutine");
+                        }
                         // Returns subroutine
                         SP -= 1;
-                        PC = SP;
+                        PC = stack[SP];
                     }
                     break;
 
                 case 0x1000:
                     // 1NNN
                     // Jumps to NNN
+                    if (debug)
+                    {
+                        Console.WriteLine("Jump to NNN");
+                    }
                     PC = (ushort)(opcode & 0x0FFF);
                     IgnorePCAdvance();
                     break;
@@ -90,6 +105,10 @@ namespace Chip8_CSharp.Chip8
                 case 0x2000:
                     // 2NNN
                     // Calls subroutine at NNN
+                    if (debug)
+                    {
+                        Console.WriteLine("Call subroutine at NNN");
+                    }
                     stack[SP] = PC;
                     SP++;
                     PC = (ushort)(opcode & 0x0FFF);
@@ -99,6 +118,10 @@ namespace Chip8_CSharp.Chip8
                 case 0x3000:
                     // 3XNN
                     // Skips next instruction if V[x] == NN
+                    if (debug)
+                    {
+                        Console.WriteLine("Skip next if Equals");
+                    }
                     Vx = V[(byte)(opcode & 0x0F00 >> 8)];
                     if ((byte)(opcode & 0x00FF) == Vx)
                     {
@@ -109,6 +132,10 @@ namespace Chip8_CSharp.Chip8
                 case 0x4000:
                     // 4XNN
                     // Skips next instruction if V[x] != NN
+                    if (debug)
+                    {
+                        Console.WriteLine("Skip next if Different");
+                    }
                     Vx = V[(byte)(opcode & 0x0F00 >> 8)];
                     if ((byte)(opcode & 0x00FF) != Vx)
                     {
@@ -119,23 +146,35 @@ namespace Chip8_CSharp.Chip8
                 case 0x5000:
                     // 5XY0
                     // Skips next instruction if V[x] == V[y]
+                    if (debug)
+                    {
+                        Console.WriteLine("Skip next if regs equals");
+                    }
                     Vx = V[(byte)(opcode & 0x0F00) >> 8];
                     Vy = V[(byte)(opcode & 0x00F0) >> 4];
                     if (Vx == Vy)
                     {
-
+                        PC += 2;
                     }
                     break;
 
                 case 0x6000:
                     // 6XNN
                     // Vx = NN
+                    if (debug)
+                    {
+                        Console.WriteLine("Load value NN in reg x");
+                    }
                     V[(byte)(opcode & 0x0F00) >> 8] = (byte)(opcode & 0x00FF);
                     break;
 
                 case 0x7000:
                     // 7XNN
                     // Vx += NN
+                    if (debug)
+                    {
+                        Console.WriteLine("Adds NN in reg x");
+                    }
                     V[(byte)(opcode & 0x0F00) >> 8] += (byte)(opcode & 0x00FF);
                     break;
 
@@ -148,24 +187,40 @@ namespace Chip8_CSharp.Chip8
                         case 0x8000:
                             // 8XY0
                             // Vx = Vy
+                            if (debug)
+                            {
+                                Console.WriteLine("Copy reg x to reg y");
+                            }
                             V[(byte)(opcode & 0x0F00) >> 8] = Vy;
                             break;
 
                         case 0x8001:
                             // 8XY1
                             // Vx |= Vy
+                            if (debug)
+                            {
+                                Console.WriteLine("Reg x or Reg y");
+                            }
                             V[(byte)(opcode & 0x0F00) >> 8] |= Vy;
                             break;
 
                         case 0x8002:
                             // 8XY2
                             // Vx &= Vy
+                            if (debug)
+                            {
+                                Console.WriteLine("Reg x and Reg y");
+                            }
                             V[(byte)(opcode & 0x0F00) >> 8] &= Vy;
                             break;
 
                         case 0x8003:
                             // 8XY3
                             // Vx ^= Vy
+                            if (debug)
+                            {
+                                Console.WriteLine("Reg x xor Reg y");
+                            }
                             V[(byte)(opcode & 0x0F00) >> 8] ^= Vy;
                             break;
 
@@ -173,6 +228,10 @@ namespace Chip8_CSharp.Chip8
                             // 8XY4
                             // Vx += Vy
                             // Check for overflow
+                            if (debug)
+                            {
+                                Console.WriteLine("Reg x + Reg y");
+                            }
                             if (CheckOverflow(V[(byte)(opcode & 0x0F00) >> 8], Vy))
                             {
                                 V[15] = 1;
@@ -188,6 +247,10 @@ namespace Chip8_CSharp.Chip8
                             // 8XY5
                             // Vx -= Vy
                             // Check for underflow
+                            if (debug)
+                            {
+                                Console.WriteLine("Reg x - Reg y");
+                            }
                             if (CheckUnderflow(V[(byte)(opcode & 0x0F00) >> 8], Vy))
                             {
                                 V[15] = 1;
@@ -278,7 +341,8 @@ namespace Chip8_CSharp.Chip8
                         case 0xE09E:
                             // EX9E
                             // Skips next instruction if (key == Vx)
-                            if(GetKey() == V[(byte)(opcode & 0x0F00) >> 8]){
+                            if (GetKey() == V[(byte)(opcode & 0x0F00) >> 8])
+                            {
                                 PC += 2;
                             }
                             break;
@@ -286,7 +350,8 @@ namespace Chip8_CSharp.Chip8
                         case 0xE0A1:
                             // EXA1
                             // Skips next instruction if (key == Vx)
-                            if(GetKey() != V[(byte)(opcode & 0x0F00) >> 8]){
+                            if (GetKey() != V[(byte)(opcode & 0x0F00) >> 8])
+                            {
                                 PC += 2;
                             }
                             break;
